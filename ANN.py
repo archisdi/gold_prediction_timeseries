@@ -1,7 +1,7 @@
 author = "AI research team"
 
 import numpy as np
-
+from operator import truediv
 lr = 0.01
 
 
@@ -19,16 +19,10 @@ def initBias(inputSize,series,outputSize):
     return bias
 
 def activFunction(l, w, b):
-    print(l)
-    print(w)
-    print(b)
-    b= 0.5
-    # masih salah
-    a=np.exp(sum(np.dot(w, l)) + b)
-    print(a)
+    z = np.dot(w,l)
+    a=np.exp(-(z + b))
     sig = 1 / (1 + a)
-    print(sig)
-    print('-----------------')
+    # print sig
     return sig
 
 def forward(l0, w0, w1, b0, b1):
@@ -37,24 +31,30 @@ def forward(l0, w0, w1, b0, b1):
     for i in range(len(l0)):
         l1.append(activFunction(l0[i], w0[i], b0[i]))
         output.append(activFunction(l1[i], w1[i], b1[i]))
-    # print(output)
     return l1, output
 
 def backward(output, w1, l1, b1, w0, l0, b0, error):
     d1 = output * (1 - output).T * error
-    d0 = l1 * (1 - l1).T * (d1 * lr).T
-    dw1 = w1 + (lr * d1 * l1)
-    dw0 = w0 + (lr * d0 * l0)
-    db1 = b1 + (lr * d1)
-    db0 = b0 + (lr * b0)
-    return dw0, dw1, db0, db1
+    d0 = l1 * (1 - l1).T * d1 *w1.T
+    dw1 = lr * d1.T * l1
+    dw0 = lr * d0.T * l0
+    db1 = lr * d1
+    db0 = lr * b0
+    w1 = w1 + dw1.T
+    w0 = w0 + dw0.T
+    b1 = b1 + db1
+    b0 = b0 + db0
+    return w0, w1, b0, b1
 
 def MAPEcalc(output, target):
-    MAPE = np.abs((output - target) / target)
-    return MAPE
+    print output
+    selisih = [x - y for x, y in zip(target, output)]
+    print selisih
+    print target
+    return map(truediv,selisih,target)
 
 def errorCalc(output, target):
-    error = np.abs(output - target)
+    error = [x - y for x, y in zip(target, output)]
     return error
 
 def train(atribut, target, epoch):
@@ -67,14 +67,12 @@ def train(atribut, target, epoch):
     b1 = initBias(inputSize,series,1)
     w0 = initWeight(inputSize, series, 3)
     w1 = initWeight(inputSize, series, 1)
+    # print target
 
     for i in range(epoch):
         l1, output = forward(l0, w0, w1, b0, b1)
-        break
+        print output
         error = errorCalc(output, target)
         MAPE = MAPEcalc(output, target)
-        print(MAPE)
-        print(error)
         w0, w1, b0, b1 = backward(output, w1, l1, b1, w0, l0, b0, error)
-
     return MAPE
